@@ -1,4 +1,4 @@
-# Spider project guidance
+# Spiderling project guidance
 
 ## Start here
 
@@ -24,8 +24,8 @@ Use an evidence-first loop:
 
 - Preserve the zero-build browser core unless the task explicitly changes that architecture.
 - The current procedural spider is the debug/reference representation, not a permanent restriction on production rendering.
-- v0.2 is migrating toward body-authoritative kinematic locomotion with procedural gait + IK. The current code may still contain foot-authoritative legacy logic during the migration.
-- A future rigged production mesh is allowed behind a clean motion/render boundary; do not introduce it as part of v0.2 unless `docs/current.md` changes.
+- Locomotion v2 is the retained body-intent-first baseline; do not reopen foot-authoritative movement work without a demonstrated regression. Gait/IK explain and guard the intended body motion.
+- A future rigged production mesh is allowed behind a clean motion/render boundary; preserve the existing procedural reference model for regression tests.
 - Behavior randomness must be seedable so automated tests remain deterministic.
 - Do not use or control the user's personal browser session. Browser checks use a separate local/headless browser against `localhost`.
 - The desktop product runs in macOS `WKWebView`; Playwright Chromium is test-only. Never run `playwright install` or `playwright-core install`; use an already-installed local Chrome/Chromium executable for browser checks, and report the missing executable instead of downloading another version.
