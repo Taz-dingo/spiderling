@@ -165,3 +165,102 @@ test("brain: seeded wander is deterministic and stays inside desktop bounds", as
     assert.ok(Math.abs(result.a[1]) <= 1080 / 2 / VIEW_Z_K - BRAIN_DESKTOP_MARGIN / VIEW_Z_K + 1, JSON.stringify(result));
   } finally { await page.close(); }
 });
+
+test("brain: seeded rest micro-actions are rare, reproducible, and do not move the spider", async () => {
+  const page = await brainPage();
+  try {
+    const result = await page.evaluate(() => {
+      function run(seed) {
+        spider.position.set(0, 0, 0);
+        spider.speed = 0;
+        spider.angle = 0;
+        seedFeet();
+        resetSpiderBrain(seed);
+        spiderBrain.stateDeadline = 12;
+        spiderBrain.idleActionAt = .01; // exercise the planned action immediately
+        window.__petMouse = { x: 700, z: 0 }; // no nearby stimulus
+        advanceTime(17);
+        const intent = { ...window.__spiderExpression };
+        const before = palps.map(palp => palp.tip.position.clone());
+        for (let i = 0; i < 60; i++) advanceTime(17);
+        const motion = palps.map((palp, i) => palp.tip.position.distanceTo(before[i]));
+        return {
+          intent,
+          visible: window.__spiderExpression?.kind,
+          progress: window.__spiderExpression?.progress,
+          state: spiderBrain.state,
+          position: spider.position.length(),
+          targetDistance: pointer.distanceTo(spider.position),
+          motion,
+          bodyYaw: body.rotation.y + spider.angle,
+        };
+      }
+      return { groom: run(1), repeat: run(1), survey: run(42) };
+    });
+    assert.equal(result.groom.intent.kind, "GROOM", JSON.stringify(result));
+    assert.equal(result.survey.intent.kind, "SURVEY", JSON.stringify(result));
+    assert.deepEqual(result.groom.intent, result.repeat.intent, "seed must reproduce kind and chosen side");
+    for (const action of [result.groom, result.survey]) {
+      assert.equal(action.state, "REST", JSON.stringify(action));
+      assert.equal(action.visible, action.intent.kind, JSON.stringify(action));
+      assert.ok(action.progress > .25 && action.progress < .8, JSON.stringify(action));
+      assert.ok(action.position < 2, "micro-actions must never turn into locomotion");
+      assert.ok(action.targetDistance < 12, "rest must keep the movement target local");
+      assert.ok(Math.max(...action.motion) > 1.5, "micro-action should visibly move existing palps");
+    }
+    assert.ok(Math.abs(result.survey.bodyYaw) > .015, "survey must include a subtle, bounded body look");
+    assert.ok(Math.abs(result.groom.bodyYaw) < .001, "groom must not turn the body");
+  } finally { await page.close(); }
+});
+
+test("brain: rest micro-actions are interruptible and do not replay within the same rest bout", async () => {
+  const page = await brainPage();
+  try {
+    const result = await page.evaluate(() => {
+      resetSpiderBrain(1);
+      spiderBrain.stateDeadline = 12;
+      spiderBrain.idleActionAt = .01;
+      window.__petMouse = { x: 700, z: 0 };
+      advanceTime(17);
+      const before = window.__spiderExpression?.kind;
+      window.__petMouse = { x: 165, z: 0 }; // nearby meaningful motion interrupts
+      advanceTime(17);
+      const after = window.__spiderExpression;
+      for (let i = 0; i < 90; i++) {
+        window.__petMouse = { x: 165, z: 0 };
+        advanceTime(17);
+      }
+      return {
+        before,
+        after,
+        later: window.__spiderExpression,
+        alreadyUsed: spiderBrain.restActionUsed,
+        state: spiderBrain.state,
+      };
+    });
+    assert.equal(result.before, "GROOM", JSON.stringify(result));
+    assert.equal(result.after, null, "stimulus should cancel active grooming immediately");
+    assert.equal(result.later, null, "cancelled action must not resume during the same rest bout");
+    assert.equal(result.alreadyUsed, true, JSON.stringify(result));
+  } finally { await page.close(); }
+});
+
+test("brain: quiet rest can finish without any micro-action", async () => {
+  const page = await brainPage();
+  try {
+    const result = await page.evaluate(() => {
+      resetSpiderBrain(7); // seeded skip of optional rest expression
+      spiderBrain.stateDeadline = 12;
+      spiderBrain.idleActionAt = .01;
+      window.__petMouse = { x: 700, z: 0 };
+      advanceTime(17);
+      const first = window.__spiderExpression;
+      for (let i = 0; i < 120; i++) advanceTime(17);
+      return { first, last: window.__spiderExpression, used: spiderBrain.restActionUsed, state: spiderBrain.state };
+    });
+    assert.equal(result.first, null, JSON.stringify(result));
+    assert.equal(result.last, null, JSON.stringify(result));
+    assert.equal(result.used, true);
+    assert.equal(result.state, "REST");
+  } finally { await page.close(); }
+});
