@@ -4,7 +4,7 @@ A procedural jumping-spider desktop pet for macOS.
 
 Spiderling is an experiment in making a desktop creature feel **alive**, rather than turning an animal model into a cursor follower. It combines a small stateful behavior system, body-intent-first locomotion, procedural gait / IK, and a lightweight native macOS shell that can move the pet across physical displays.
 
-> **Status:** `v0.0.001` — experimental and playable. The core behavior, locomotion, and current dual-display traversal are working; this is not yet a packaged macOS app.
+> **Status:** `v0.0.001` — experimental and playable. Core behavior, locomotion, and the tested dual-display traversal work. An ad-hoc-signed macOS app **preview** can now be built, but there is no notarized release.
 
 ## Highlights
 
@@ -66,7 +66,22 @@ Run:
 
 The script compiles the lightweight Swift host to `/tmp/SpiderPet` and launches a transparent, click-through `WKWebView` window.
 
-Quit with `Cmd-Q` or `Ctrl-C` in the launching terminal.
+Quit with `Ctrl-C` in the launching terminal, or choose **Quit Spiderling** from the menu bar spider icon.
+
+### macOS app preview (not an official release)
+
+On a Mac with Xcode Command Line Tools:
+
+```sh
+bash desktop/package.sh
+open dist/Spiderling.app
+```
+
+This creates a self-contained `dist/Spiderling.app` and a `dist/Spiderling-macos-<arch>.zip`. The app embeds the same browser resources and loads them from `Contents/Resources`; it does not need the repository beside it.
+
+The [`macos-package` GitHub Actions workflow](https://github.com/Taz-dingo/spiderling/actions/workflows/package.yml) builds the preview and uploads the ZIP as a workflow artifact for inspection. Each build currently targets the runner's architecture; it is **not** a universal binary.
+
+**Important:** the preview is signed ad hoc for bundle integrity, **not** with an Apple Developer ID and **not notarized**. Gatekeeper may block a downloaded artifact. It is intended for development/testing, not a general-audience installer; do not treat a green CI build as real-desktop visual validation.
 
 ## Tests
 
@@ -129,7 +144,7 @@ docs/                      architecture, verification, glossary, current state
 This is intentionally an early experimental release.
 
 - The native desktop host currently targets **macOS only**.
-- There is no signed `.app`, installer, launch-at-login flow, or settings UI yet.
+- The preview `.app` is not Developer ID-signed/notarized; there is no installer, launch-at-login flow, or settings UI yet.
 - The visible spider is still the procedural debug/reference model rather than a production art asset.
 - Some unusual physical display topologies have not been exercised on real hardware.
 - Non-rectangular display arrangements may eventually need topology-aware routing through real shared screen edges.
