@@ -535,7 +535,7 @@ function resize() {
 
 let last = performance.now();
 function loop(now) {
-  const rest = petMode && !spider.jump && spider.speed <= .5 && spider.pose <= 0 &&
+  const rest = petMode && !spider.jump && !window.__spiderExpression && spider.speed <= .5 && spider.pose <= 0 &&
     !legs.some(leg => leg.swing) && now / 1000 - petMouseActive > 1;
   if (rest) {
     // Idle pet: render at ~15 fps instead of 60 so the full-screen transparent
