@@ -1,6 +1,6 @@
 /* global THREE */
 
-// Spider Brain v1 owns behaviour, not locomotion. It observes the desktop
+// Spider Brain owns behaviour, not locomotion or the rendered rig. It observes the desktop
 // cursor as an environmental stimulus and chooses a short-lived behavioural
 // intent. Motion Controller / gait still own how the body moves.
 //
@@ -46,6 +46,10 @@ const spiderBrain = {
   wanderTarget: null,
   rngState: null,
   pounceCooldown: 0,
+  // One optional, quiet micro-action per REST bout. Never a locomotion goal.
+  idleAction: null,
+  idleActionAt: 0,
+  restActionUsed: false,
 };
 
 let brainLastWall = performance.now() / 1000;
@@ -72,12 +76,22 @@ function brainStateDeadline(state) {
   }
 }
 
+function planRestAction() {
+  spiderBrain.idleAction = null;
+  spiderBrain.restActionUsed = false;
+  spiderBrain.idleActionAt = brainRange(3.5, 6.5);
+}
+
 function enterBrainState(state) {
   spiderBrain.state = state;
   spiderBrain.stateTime = 0;
   spiderBrain.stateDeadline = brainStateDeadline(state);
   if (state !== "WANDER") spiderBrain.wanderTarget = null;
-  if (state === "REST") spiderBrain.attention = Math.min(spiderBrain.attention, .45);
+  spiderBrain.idleAction = null; // cancel on any behaviour transition
+  if (state === "REST") {
+    spiderBrain.attention = Math.min(spiderBrain.attention, .45);
+    planRestAction();
+  }
 }
 
 function resetSpiderBrain(seed = null) {
@@ -97,6 +111,7 @@ function resetSpiderBrain(seed = null) {
   spiderBrain.rngState = seed == null ? null : (Number(seed) >>> 0) || 1;
   spiderBrain.pounceCooldown = 0;
   spiderBrain.stateDeadline = brainStateDeadline("REST");
+  planRestAction();
   pointer.copy(spider.position);
   petState = spiderBrain.state;
   petIdleTarget = null;
@@ -211,6 +226,31 @@ function beginBrainPounce(mouse) {
   return true;
 }
 
+// Expressions are brief, interruptible animation intents, not new Brain states.
+// Most REST bouts are silent. A nearby stimulus, locomotion, or a jump cancels
+// an action immediately so the spider never grooms through an interaction.
+function updateRestAction(delta) {
+  if (spiderBrain.state !== "REST" || spider.jump || spider.speed > .5 ||
+      spiderBrain.activityAge < 1.5 || spiderBrain.attention >= .4) {
+    spiderBrain.idleAction = null;
+    return;
+  }
+  if (spiderBrain.idleAction) {
+    spiderBrain.idleAction.elapsed += delta;
+    if (spiderBrain.idleAction.elapsed >= spiderBrain.idleAction.duration) spiderBrain.idleAction = null;
+    return;
+  }
+  if (spiderBrain.restActionUsed || spiderBrain.stateTime < spiderBrain.idleActionAt) return;
+  spiderBrain.restActionUsed = true;
+  if (brainRandom() >= .7) return; // deliberately keep some rests entirely quiet
+  const kind = brainRandom() < .55 ? "GROOM" : "SURVEY";
+  const duration = kind === "GROOM" ? 2.4 : 2.0;
+  if (spiderBrain.stateDeadline - spiderBrain.stateTime <= duration + .8) return;
+  spiderBrain.idleAction = {
+    kind, side: brainRandom() < .5 ? -1 : 1, elapsed: 0, duration,
+  };
+}
+
 function updateSpiderBrain(delta) {
   spiderBrain.clock += delta;
   spiderBrain.stateTime += delta;
@@ -295,6 +335,7 @@ function updateSpiderBrain(delta) {
       enterBrainState("REST");
   }
 
+  updateRestAction(delta);
   petState = spiderBrain.state;
   petIdleTarget = spiderBrain.wanderTarget;
   if (spiderBrain.state !== "REST") petMouseActive = performance.now() / 1000;
@@ -302,8 +343,16 @@ function updateSpiderBrain(delta) {
 }
 
 function updateBrainDebug() {
+  // Small read-only intent for the existing procedural body animation.
+  const action = spiderBrain.idleAction;
+  window.__spiderExpression = action ? {
+    kind: action.kind, side: action.side,
+    progress: clamp(action.elapsed / action.duration, 0, 1),
+  } : null;
   window.__spiderBrain = {
     state: spiderBrain.state,
+    idleAction: action?.kind ?? null,
+    idleActionProgress: action ? Number((action.elapsed / action.duration).toFixed(3)) : null,
     stateTime: Number(spiderBrain.stateTime.toFixed(3)),
     attention: Number(spiderBrain.attention.toFixed(3)),
     activityAge: Number(spiderBrain.activityAge.toFixed(3)),
