@@ -90,6 +90,12 @@ Real-host review accepted the current cadence and trigger balance as sufficient 
 
 Remove stale TODOs, superseded claims, dead code, and obsolete tests as the affected area is touched.
 
+## macOS packaging preview (development only)
+
+A new `desktop/package.sh` builds a self-contained `Spiderling.app` with the existing Swift host and browser resources. The native host uses `Bundle.main.resourceURL` in app mode while retaining its explicit-root CLI test contract. Since the window is click-through and the app has no Dock icon, a menu bar item exposes **Quit Spiderling**.
+
+A `macos-package` GitHub Actions workflow builds a native-architecture ZIP artifact on macOS. This is **ad-hoc signed, not Developer ID-signed or notarized**. Building an app bundle does not prove it runs correctly in a real interactive desktop session; GUI behavior still needs L3/manual review. Do not describe the preview artifact as a packaged public release.
+
 ## Model / animation direction
 
 The project no longer assumes that the final visible spider must be procedural geometry.
@@ -109,7 +115,7 @@ The priority is **perceptual realism**, not a full biomechanical simulation.
 - production Blender spider / final rigged asset;
 - large authored-animation library;
 - window-frame climbing;
-- packaged/signed `.app`, launch-at-login, or menu-bar settings;
+- Developer ID-signed/notarized `.app` release, launch-at-login, or full menu-bar settings;
 - full rigid-body / muscle / hydraulic simulation.
 
 ## Known open problems
@@ -118,4 +124,4 @@ The priority is **perceptual realism**, not a full biomechanical simulation.
 2. Non-rectangular/partially overlapping screen layouts may eventually need topology-aware path routing so the pet does not walk through an off-screen gap in the desktop bounding box.
 3. Locomotion may still have minor visual residuals such as transient adjacent-leg crossings, but its architecture is no longer the current blocker.
 4. Different display backing scales may change apparent spider size during a crossing; this remains non-blocking visual polish.
-5. The native macOS shell still needs normal productization work such as packaging, signing, settings, and launch-at-login if the project moves beyond the experimental phase.
+5. The native macOS preview still needs real-host app-launch/quit smoke, Developer ID signing/notarization, settings, and launch-at-login before a public release.
