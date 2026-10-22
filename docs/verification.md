@@ -83,7 +83,10 @@ Important semantic gates:
 4. **earned pounce** — fast sweep-and-stop may trigger `POUNCE` after engagement, not from every ordinary cursor move;
 5. **post-strike reassessment** — after landing, the spider must not immediately become a permanent follower;
 6. **seeded autonomy** — the same seed must reproduce the same wander choice;
-7. autonomous targets stay inside desktop bounds.
+7. autonomous targets stay inside desktop bounds;
+8. seedable `REST` micro-actions produce visible local animation without moving the spider or changing its target;
+9. nearby activity cancels grooming immediately and a cancelled action cannot replay in the same rest;
+10. some seeded rest periods stay entirely quiet.
 
 These tests protect behaviour meaning, not one exact second-by-second animation timeline.
 

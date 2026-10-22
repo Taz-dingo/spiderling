@@ -8,7 +8,7 @@ Spiderling is an experiment in making a desktop creature feel **alive**, rather 
 
 ## Highlights
 
-- **Stateful behavior** — `REST`, `WANDER`, `OBSERVE`, `APPROACH`, `STALK`, and `POUNCE`.
+- **Stateful behavior** — `REST`, `WANDER`, `OBSERVE`, `APPROACH`, `STALK`, and `POUNCE`. During some quiet rests, Spiderling briefly grooms a palp or surveys the surroundings; nearby activity cancels the action.
 - **The cursor is a stimulus, not a leash** — ordinary mouse movement is usually ignored; nearby repeated activity can attract attention and escalate behavior.
 - **Body-intent-first locomotion** — the body owns movement intent while the legs adapt to explain it visually.
 - **Procedural gait** — predictive replants, planted-foot locking, future-pose footholds, soft motion constraints, and bounded fixed-length IK.

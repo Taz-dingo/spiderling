@@ -78,7 +78,16 @@ Determinism:
 
 Real-host review accepted the current cadence and trigger balance as sufficient for the first `v0.0.001` baseline. Future Brain changes are product polish unless a clear behavioral regression appears.
 
-### 4. Repository hygiene
+### 4. Behavior v2 — first slice: quiet rest expressions
+
+The existing six Brain states remain unchanged. During some `REST` bouts, Brain emits a brief, seeded, optional `GROOM` or `SURVEY` expression. The procedural renderer animates the existing pedipalps, subtle abdomen response, and a bounded survey yaw; no new locomotion targets, leg scheduling, or new behaviour-state taxonomy were added.
+
+- Only one attempt per rest bout, with some rests deliberately left completely quiet.
+- A nearby stimulus, walking, jumping, or a Brain state transition cancels the expression immediately; there is no queued replay.
+- `window.__spiderExpression` is a small render intent, while `window.__spiderBrain` reports action and progress for repeatable tests/diagnostics.
+- The next priorities are real-desktop perceptual review and, only if needed, more distinct `OBSERVE` / `STALK` timing. Do not reopen the stable locomotion architecture just to make an idle pose.
+
+### 5. Repository hygiene
 
 - `README.md`: public overview, capabilities, how to run, and current limitations.
 - `docs/current.md`: current version, priorities, known open problems.

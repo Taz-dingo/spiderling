@@ -51,6 +51,10 @@ The important product contract is that mouse motion is not equivalent to `follow
 
 Autonomous choices may use normal randomness at runtime, but Brain accepts a fixed seed for tests. Tests should protect semantic properties rather than one exact animation timeline: default non-follow, observe-before-chase, stand-off approach, earned pounce, deterministic seeded choices.
 
+### Idle expressions (Behavior v2, first slice)
+
+Brain may emit an optional `GROOM` or `SURVEY` render intent during `REST`. This intent contains only a type, chosen side and normalized progress; it never changes the movement target. `app.js` maps that intent onto subtle existing palp/abdomen/body animation without modifying leg IK, stance feet or native window placement. Expressions are seeded, infrequent, and cancelled by a stimulus, movement, jump or state transition. `WANDER` and mouse-related states retain their existing motion contracts.
+
 The plain browser `?pet=1` path remains an explicit continuous-follow locomotion harness for older low-level regression tests. The real WKWebView host enables Brain by default through its native `petPose` bridge; browser Brain tests opt in with `?brain=1`. Product behaviour is Brain-owned, not the harness path.
 
 ## Motion architecture
