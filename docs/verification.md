@@ -45,7 +45,11 @@ Playwright is only the automation client here; the desktop product itself uses m
 
 `.github/workflows/verify.yml` runs repeatable browser/static checks on Ubuntu. `.github/workflows/host-verify.yml` isolates Swift/host geometry checks to macOS. Hosted runners are not evidence for the user's actual display topology/window-server behavior.
 
-GitHub Actions execution has recently failed before workflow steps start in this repository; when that happens, do not reinterpret infrastructure failure as a code failure. Local macOS evidence remains authoritative for real-host behaviour.
+The latest verified main-branch `verify` run (2026-09-13) and `host-verify` run (2026-09-12) succeeded. Earlier GitHub Actions failures included infrastructure failures before workflow steps started; those are not code failures. Check the current workflow run rather than copying historical CI status. Local macOS evidence remains authoritative for real-host behaviour.
+
+### Packaged-app preview
+
+On macOS, run `bash desktop/package.sh`. The `macos-package` GitHub Actions workflow builds and uploads the resulting native-architecture ZIP. Its static gates check the embedded web resources, Info.plist and ad-hoc code-signature integrity. This does **not** verify Gatekeeper installation or that the menu bar item and animated pet work on an interactive user desktop; perform that manual smoke before treating the package as ready for a public release.
 
 ### L1 — locomotion browser harness
 

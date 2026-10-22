@@ -1,0 +1,45 @@
+name: macos-package
+
+on:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - 'index.html'
+      - 'app.js'
+      - 'style.css'
+      - 'src/**'
+      - 'vendor/**'
+      - '.github/workflows/package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build app bundle and ZIP
+        run: bash desktop/package.sh
+      - name: Verify packaged application
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP=dist/Spiderling.app
+          test -x "$APP/Contents/MacOS/Spiderling"
+          test -f "$APP/Contents/Resources/index.html"
+          test -f "$APP/Contents/Resources/app.js"
+          test -f "$APP/Contents/Resources/src/brain.js"
+          test -f "$APP/Contents/Resources/vendor/three.min.js"
+          plutil -lint "$APP/Contents/Info.plist"
+          codesign --verify --deep --strict "$APP"
+          shasum -a 256 dist/Spiderling-macos-*.zip
+      - name: Upload unsigned preview ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Spiderling-macOS-preview
+          path: dist/Spiderling-macos-*.zip
+          if-no-files-found: error
+          retention-days: 14

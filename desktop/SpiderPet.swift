@@ -39,8 +39,21 @@ final class PetWindow: NSWindow {
 }
 
 final class SpiderPetApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
-    let root = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : FileManager.default.currentDirectoryPath)
+    // The source harness passes its page root explicitly; a packaged app loads
+    // the same files from Contents/Resources without needing a terminal.
+    private var explicitRootArg: String? {
+        let args = CommandLine.arguments
+        return args.count > 1 && !args[1].hasPrefix("-") ? args[1] : nil
+    }
+    lazy var root: URL = {
+        if let explicitRootArg { return URL(fileURLWithPath: explicitRootArg, isDirectory: true) }
+        if Bundle.main.bundleURL.pathExtension == "app", let resources = Bundle.main.resourceURL {
+            return resources
+        }
+        return URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+    }()
     let petWindowSize = NSSize(width: 360, height: 360)
+    private var statusItem: NSStatusItem?
 
     var window: NSWindow!
     var webView: WKWebView!
@@ -52,6 +65,16 @@ final class SpiderPetApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        // The window is click-through and has no Dock icon; keep a visible
+        // way to quit when launched as an .app (without a terminal).
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.title = "🕷 Spiderling"
+        let menu = NSMenu()
+        let quitItem = NSMenuItem(title: "Quit Spiderling", action: #selector(quitSpiderling), keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
+        item.menu = menu
+        statusItem = item
         desktopFrame = liveDesktopFrame
         NotificationCenter.default.addObserver(self, selector: #selector(repositionWindow), name: NSApplication.didChangeScreenParametersNotification, object: nil)
 
@@ -150,7 +173,7 @@ final class SpiderPetApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     // MARK: diagnostics
 
     private func argumentValue(_ flag: String) -> String? {
-        let args = Array(CommandLine.arguments.dropFirst(2))
+        let args = Array(CommandLine.arguments.dropFirst(explicitRootArg == nil ? 1 : 2))
         guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
         return args[i + 1]
     }
@@ -255,6 +278,8 @@ final class SpiderPetApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             }
         }
     }
+
+    @objc private func quitSpiderling() { NSApp.terminate(nil) }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
