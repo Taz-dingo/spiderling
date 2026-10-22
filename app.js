@@ -295,14 +295,40 @@ function placeBone(mesh, start, end, radius) {
 function animateSoftParts(gait, jumpFrame) {
   const phase = spider.gaitClock * Math.PI * 4;
   const sway = jumpFrame ? Math.sin(jumpFrame.progress * Math.PI) * .12 : Math.sin(phase) * gait * .055;
-  abdomenRig.rotation.y = sway;
-  abdomenRig.rotation.z = -sway * .65;
+
+  // The Brain chooses a low-frequency expression; the rig decides how it looks.
+  // Keep it separate from locomotion targets, planted feet and leg IK.
+  const expression = !jumpFrame && gait < .1 ? window.__spiderExpression : null;
+  const progress = expression?.progress ?? 0;
+  const envelope = expression
+    ? ease(clamp(progress / .18, 0, 1)) * ease(clamp((1 - progress) / .2, 0, 1))
+    : 0;
+  const survey = expression?.kind === "SURVEY" ? envelope : 0;
+  const groom = expression?.kind === "GROOM" ? envelope : 0;
+  const side = expression?.side ?? 1;
+  const groomingBeat = .65 + .35 * Math.sin(progress * Math.PI * 4) ** 2;
+
+  abdomenRig.rotation.y = sway + survey * Math.sin(progress * Math.PI * 2) * .065;
+  abdomenRig.rotation.z = -sway * .65 + survey * side * .025;
+  // A very small inquisitive yaw while feet stay planted; reset every frame.
+  body.rotation.y = -spider.angle + survey * side * .035;
+
   for (const palp of palps) {
-    const flick = gait ? 0 : Math.sin(phase + palp.side * .8) * .45;
+    const activeGroom = groom && palp.side === side ? groom * groomingBeat : 0;
+    const activeSurvey = survey * (palp.side === side ? 1 : .35);
+    const flick = gait ? 0 : Math.sin(phase + palp.side * .8) * .45 * (1 - activeGroom);
     const [base, mid, tip] = palp.nodes;
     base.set(25, -1, palp.side * 5);
-    mid.set(28.5 + flick * .2, -3.7 - Math.abs(flick) * .25, palp.side * (7 + flick * .18));
-    tip.set(31 + flick * .55, -5.5 - flick * .25, palp.side * (8 + flick * .35));
+    mid.set(
+      28.5 + flick * .2 - activeGroom * 1.2,
+      -3.7 - Math.abs(flick) * .25 + activeGroom * 2.3 + activeSurvey * 1.1,
+      palp.side * (7 + flick * .18 - activeGroom * 2.5 + activeSurvey * .5),
+    );
+    tip.set(
+      31 + flick * .55 - activeGroom * 2.8 + activeSurvey * 1.2,
+      -5.5 - flick * .25 + activeGroom * 4.5 + activeSurvey * 2.8,
+      palp.side * (8 + flick * .35 - activeGroom * 5 + activeSurvey * 1.5),
+    );
     palp.meshes.forEach((mesh, index) => placeBone(mesh, palp.nodes[index], palp.nodes[index + 1], index ? .75 : 1.05));
     palp.tip.position.copy(tip);
   }
